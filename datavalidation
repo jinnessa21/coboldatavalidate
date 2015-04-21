@@ -1,0 +1,137 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.   ACT5.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IN-FILE ASSIGN TO DISK
+           ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT OUT-FILE ASSIGN TO DISK
+           ORGANIZATION IS LINE SEQUENTIAL.
+       DATA DIVISION.
+       FILE SECTION.
+       FD IN-FILE
+           LABEL RECORDS ARE STANDARD
+           VALUE OF FILE-ID IS 'C:\COBOL\ACT5.TXT'
+           DATA RECORD IS IN-REC.
+       01 IN-REC.
+         05 CUST-NO                      PIC S9(3).
+         05 CUST-NAME                    PIC X(27).
+         05 MC-ALLOWED                   PIC 9(5).
+         05 CREDIT-RATING                PIC X(2).
+         05 TOTAL-BALANCE-DUE            PIC 9(5).
+       FD OUT-FILE
+           LABEL RECORDS ARE STANDARD
+           VALUE OF FILE-ID IS 'C:\COBOL\ACT5_OUT.TXT'
+           DATA RECORD IS OUT-REC, OUT-HEADER.
+       01 OUT-REC                 PIC X(200).
+       01 OUT-HEADER              PIC X(30).
+       WORKING-STORAGE SECTION.
+       01 I                       PIC 9(2) VALUE 1.
+       01 ARE-THERE-MORE-RECORDS  PIC X(3) VALUE 'YES'.
+       01 MAIN-HEADER.
+           05 FILLER              PIC X(12) VALUE 'CUSTOMER NO.'.
+           05 FILLER              PIC X(5)  VALUE SPACES.
+           05 FILLER              PIC X(15) VALUE 'CUSTOMER NAME'.
+           05 FILLER              PIC X(15) VALUE SPACES.
+           05 FILLER              PIC X(20) VALUE 'MAX CREDIT ALLOWED'.
+           05 FILLER              PIC X(15) VALUE SPACES.
+           05 FILLER              PIC X(15) VALUE 'CREDIT RATING'.
+           05 FILLER              PIC X(15) VALUE SPACES.
+           05 FILLER              PIC X(15) VALUE 'TOTAL BALANCE'.
+       01 TOTBAL                  PIC X(20) VALUE SPACES.
+       01 INFO-HEADER.
+           05 CUST-NO-OUT         PIC S9(3).
+           05 FILLER              PIC X(15).
+           05 CUST-NAME-OUT       PIC X(27).
+           05 FILLER              PIC X(10).
+           05 MC-OUT              PIC 9(5).
+           05 FILLER              PIC X(25).
+           05 CREDIT-RATING-OUT   PIC X(2).
+           05 FILLER              PIC X(27).
+           05 TOTAL-BALANCE-OUT   PIC 9(5).
+       01 TOTREC-HEADER.
+           05 FILLER              PIC X(15) VALUE 'TOTAL RECORDS: '.
+           05 TOTREC-ERR-OUT      PIC 99.
+       01 CUSTNO-HEADER.
+           05 FILLER              PIC X(15) VALUE 'CUST NOS ERROR '.
+           05 CUSTNO-ERR-OUT      PIC 99.
+       01 CUSTNAME-HEADER.
+           05 FILLER              PIC X(18) VALUE 'CUST-NAME ERRORS: '.
+           05 CUSTNAME-ERR-OUT    PIC 99.
+       01 CREDIT-HEADER.
+           05 FILLER              PIC X(20) VALUE 'MAX CREDIT EXCEEDS:'.
+           05 CREDIT-ERR-OUT      PIC 99.
+       01 TOTERR-HEADER.
+           05 FILLER              PIC X(16) VALUE 'TOTAL ERRORS: '.
+           05 TOTAL-ERR-OUT       PIC 99.
+       01 ERROR-CTR.
+           05 CUST-NO-CTR         PIC 9(2) VALUE 0.
+           05 CUST-NAME-CTR       PIC 9(2) VALUE 0.
+           05 MC-CTR              PIC 9(2) VALUE 0.
+           05 TB-CTR              PIC 9(2) VALUE 0.
+           05 MAIN-CTR            PIC 9(2) VALUE 0.
+           05 TOTAL-ERR           PIC 9(2) VALUE 0.
+       01 OUT-NEW-LINE.
+           05 OUT-LINE               PIC X.
+       PROCEDURE DIVISION.
+       MAIN-RTN.
+           OPEN INPUT IN-FILE
+               OUTPUT OUT-FILE.
+           READ IN-FILE
+               AT END MOVE 'NO' TO ARE-THERE-MORE-RECORDS.
+           WRITE OUT-REC FROM MAIN-HEADER.
+           PERFORM CALC-RTN UNTIL ARE-THERE-MORE-RECORDS = 'NO'.
+           PERFORM 500-RTN.
+
+           CLOSE IN-FILE
+                 OUT-FILE.
+           STOP RUN.
+       CALC-RTN.
+
+           IF CUST-NO < 101 OR CUST-NO > 972
+               PERFORM CUST-NO-RTN.
+           IF CUST-NAME = SPACES
+               PERFORM CUST-NAME-RTN.
+           IF TOTAL-BALANCE-DUE > MC-ALLOWED
+               PERFORM MAX-CREDIT-RTN.
+
+           PERFORM 400-RTN.
+
+       CUST-NO-RTN.
+           ADD 1 TO CUST-NO-CTR.
+           INSPECT CUST-NO REPLACING ALL CUST-NO BY 'XXX'.
+
+       CUST-NAME-RTN.
+           ADD 1 TO CUST-NAME-CTR.
+           INSPECT CUST-NAME REPLACING ALL CUST-NAME
+               BY 'ILLEGAL CUSTOMER NAME      '.
+
+       MAX-CREDIT-RTN.
+           ADD 1 TO MC-CTR.
+           INSPECT TOTAL-BALANCE-DUE REPLACING ALL TOTAL-BALANCE-DUE
+               BY ' MAX '.
+
+       400-RTN.
+            COMPUTE TOTAL-ERR = CUST-NO-CTR + CUST-NAME-CTR + MC-CTR.
+            MOVE CUST-NO TO CUST-NO-OUT.
+            MOVE CUST-NAME TO CUST-NAME-OUT.
+            MOVE MC-ALLOWED TO MC-OUT.
+            MOVE CREDIT-RATING TO CREDIT-RATING-OUT.
+            MOVE TOTAL-BALANCE-DUE TO TOTAL-BALANCE-OUT.
+            WRITE OUT-REC FROM INFO-HEADER.
+
+            READ IN-FILE
+               AT END MOVE 'NO' TO ARE-THERE-MORE-RECORDS
+               NOT AT END
+               ADD 1 TO I.
+       500-RTN.
+            MOVE CUST-NO-CTR TO CUSTNO-ERR-OUT.
+            MOVE CUST-NAME-CTR TO CUSTNAME-ERR-OUT.
+            MOVE MC-CTR TO CREDIT-ERR-OUT.
+            MOVE I TO TOTREC-ERR-OUT.
+            MOVE TOTAL-ERR TO TOTAL-ERR-OUT.
+            WRITE OUT-HEADER FROM TOTREC-HEADER.
+            WRITE OUT-HEADER FROM CUSTNO-HEADER.
+            WRITE OUT-HEADER FROM CUSTNAME-HEADER.
+            WRITE OUT-HEADER FROM CREDIT-HEADER.
+            WRITE OUT-HEADER FROM TOTERR-HEADER.
