@@ -1,0 +1,153 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. SAMPLE4.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT SALES-IN-FILE ASSIGN TO DISK
+           ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT SORT1-FILE ASSIGN TO DISK.
+           SELECT SORT2-FILE ASSIGN TO DISK
+           ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT SALES-OUT-FILE ASSIGN TO DISK
+           ORGANIZATION IS LINE SEQUENTIAL.
+       DATA DIVISION.
+       FILE SECTION.
+       FD SALES-IN-FILE
+           LABEL RECORDS ARE STANDARD
+           VALUE OF FILE-ID IS "C:\COBOL\ACT4.TXT"
+           DATA RECORD IS SALES-IN-REC.
+       01 SALES-IN-REC.
+         05 DAY-IN PIC X(1).
+         05 SALESNO-IN PIC X(2).
+         05 AMOUNT-IN PIC 9(5)V99.
+       SD SORT1-FILE.
+       01 SORT-REC.
+         05 SORT-CUSTNO             PIC 9.
+         05 SORT-CUSTNAME           PIC 99.
+         05 SORT-AMOUNT             PIC 9(5)V99.
+       FD SORT2-FILE
+           LABEL RECORDS ARE STANDARD
+           VALUE OF FILE-ID IS "C:\COBOL\ACT42.TXT"
+           DATA RECORD IS SORT2-REC.
+       01 SORT2-REC.
+         05 SORT2-CUSTNO             PIC 9.
+         05 SORT2-CUSTNAME           PIC 99.
+         05 SORT2-AMOUNT             PIC 9(5)V99.
+       FD SALES-OUT-FILE
+           LABEL RECORDS ARE STANDARD
+           VALUE OF FILE-ID IS "C:\COBOL\ACT4_OUT.TXT"
+           DATA RECORD IS SALES-OUT-REC.
+       01 SALES-OUT-REC              PIC X(80).
+       WORKING-STORAGE SECTION.
+       01 OUT-HEADER.
+         05 OUT-HEADER-SALES-REP    PIC X(12) VALUE 'SALES REPORT'.
+       01 DAY-AMT.
+         05 MON-AMT         PIC S9(6)V99 VALUE 0.
+         05 TUE-AMT         PIC S9(6)V99 VALUE 0.
+         05 WED-AMT         PIC S9(6)V99 VALUE 0.
+         05 THU-AMT         PIC S9(6)V99 VALUE 0.
+         05 FRI-AMT         PIC S9(6)V99 VALUE 0.
+       01 MON-OUT.
+         05 MON-DAY-OUT     PIC X(3) VALUE 'MON'.
+         05 FILLER          PIC X(10).
+         05 SALES-MON-AMT   PIC $(3),9(3),9(3).99.
+       01 TUE-OUT.
+         05 TUE-DAY-OUT     PIC X(3) VALUE 'TUE'.
+         05 FILLER          PIC X(10).
+         05 SALES-TUE-AMT   PIC $(3),9(3),9(3).99.
+       01 WED-OUT.
+         05 WED-DAY-OUT     PIC X(3) VALUE 'WED'.
+         05 FILLER          PIC X(10).
+         05 SALES-WED-AMT   PIC $(3),9(3),9(3).99.
+       01 THU-OUT.
+         05 THU-DAY-OUT     PIC X(3) VALUE 'THU'.
+         05 FILLER          PIC X(10).
+         05 SALES-THU-AMT   PIC $(3),9(3),9(3).99.
+       01 FRI-OUT.
+         05 FRI-DAY-OUT     PIC X(3) VALUE 'FRI'.
+         05 FILLER          PIC X(10).
+         05 SALES-FRI-AMT   PIC $(3),9(3),9(3).99.
+       01 CTR-BREAK-INFO.
+         05 DAY-OUT         PIC X(3).
+         05 FILLER          PIC X(10).
+         05 SALES-AMT-OUT   PIC $(4),9(3).99.
+       01 DAY-TOTAL         PIC 9(5) VALUE 0.
+       01 CONTROL-BREAK-LINE.
+         05 OUT-FOOTER-AMT  PIC X(25) VALUE 'TOTAL WEEKLY SALES'.
+         05 FILLER          PIC X(10).
+         05 TOTAL-WEEK-OUT  PIC $(3),9(3),9(3).99.
+       01 COLUMN-HEADINGS.
+         05 FILLER PIC X(3) VALUE 'DAY'.
+         05 FILLER PIC X(10) VALUE SPACE.
+         05 FILLER PIC X(11) VALUE 'TOTAL SALES'.
+       01 WS-WORK-AREAS.
+         05 ARE-THERE-MORE-RECORDS     PIC X(3) VALUE 'YES'.
+         05 FIRST-RECORD               PIC X(3) VALUE 'YES'.
+         05 WEEK-AMT1                  PIC S9(6)V99 VALUE 0.
+         05 WEEK-AMT2                  PIC S9(6)V99 VALUE 0.
+         05 CURR-DAY                   PIC 9(2).
+         05 CURR-AMT                   PIC 9(7) VALUE 0.
+         05 TOTAL-WEEK-AMT             PIC S9(6)V99 VALUE 0.
+       01 OUT-NEW-LINE.
+         05 OUT-LINE                   PIC X.
+       PROCEDURE DIVISION.
+       100-MAIN-MODULE.
+           SORT SORT1-FILE ON ASCENDING KEY SORT-CUSTNO 
+               USING SALES-IN-FILE GIVING SORT2-FILE.
+           OPEN INPUT SORT2-FILE
+               OUTPUT SALES-OUT-FILE.
+           READ SORT2-FILE
+               AT END MOVE 'NO' TO ARE-THERE-MORE-RECORDS.
+           PERFORM 200-HEADER-RTN.
+           PERFORM 300-CALC-RTN UNTIL ARE-THERE-MORE-RECORDS = 'NO'.
+           MOVE DAY-TOTAL TO TOTAL-WEEK-OUT.
+           WRITE SALES-OUT-REC FROM MON-OUT.
+           WRITE SALES-OUT-REC FROM TUE-OUT.
+           WRITE SALES-OUT-REC FROM WED-OUT.
+           WRITE SALES-OUT-REC FROM THU-OUT.
+           WRITE SALES-OUT-REC FROM FRI-OUT.
+           MOVE TOTAL-WEEK-AMT TO TOTAL-WEEK-OUT.
+           WRITE SALES-OUT-REC FROM CONTROL-BREAK-LINE.
+
+           CLOSE SORT2-FILE
+                 SALES-OUT-FILE.
+           STOP RUN.
+       200-HEADER-RTN.
+           MOVE SPACES TO SALES-OUT-REC.
+           WRITE SALES-OUT-REC FROM OUT-HEADER.
+           WRITE SALES-OUT-REC FROM OUT-NEW-LINE.
+           WRITE SALES-OUT-REC FROM COLUMN-HEADINGS.
+           WRITE SALES-OUT-REC FROM OUT-LINE.
+
+       300-CALC-RTN.
+           IF FIRST-RECORD = 'YES'
+               MOVE SORT2-CUSTNO TO CURR-DAY
+               MOVE 'NO' TO FIRST-RECORD
+           IF SORT2-CUSTNO NOT = CURR-DAY
+               PERFORM 400-CONTROL-BREAK.
+
+           MOVE SORT2-CUSTNO TO CURR-DAY.
+           IF SORT2-CUSTNO = '1'
+              ADD SORT2-AMOUNT TO MON-AMT.
+              MOVE MON-AMT TO SALES-MON-AMT.
+           IF SORT2-CUSTNO  = '2'
+              ADD SORT2-AMOUNT TO TUE-AMT.
+              MOVE TUE-AMT TO SALES-TUE-AMT.
+           IF SORT2-CUSTNO = '3'
+              ADD SORT2-AMOUNT TO WED-AMT.
+              MOVE WED-AMT TO SALES-WED-AMT.
+           IF SORT2-CUSTNO = '4'
+              ADD SORT2-AMOUNT TO THU-AMT.
+              MOVE THU-AMT TO SALES-THU-AMT.
+           IF SORT2-CUSTNO = '5'
+              ADD SORT2-AMOUNT TO FRI-AMT.
+              MOVE FRI-AMT TO SALES-FRI-AMT.
+
+           READ SORT2-FILE
+              AT END MOVE 'NO' TO ARE-THERE-MORE-RECORDS.
+              PERFORM 400-CONTROL-BREAK.
+       400-CONTROL-BREAK.
+           COMPUTE WEEK-AMT1 = MON-AMT + TUE-AMT + WED-AMT.
+           COMPUTE WEEK-AMT2 = THU-AMT + FRI-AMT.
+           COMPUTE TOTAL-WEEK-AMT = WEEK-AMT1 + WEEK-AMT2.
+           MOVE 0 TO CURR-AMT.
